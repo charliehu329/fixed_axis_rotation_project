@@ -342,7 +342,7 @@ ros2 run fixed_axis_rotation \
   fixed_axis_keyboard_node \
   --ros-args \
   --params-file \
-  ~/franka_ros2_ws/src/fixed_axis_rotation/config/fixed_axis_rotation.yaml
+  ~/franka_ros2_ws/src/fixed_axis_rotation_project/fixed_axis_rotation/config/fixed_axis_rotation.yaml
 ```
 
 ### 启动指令详解
