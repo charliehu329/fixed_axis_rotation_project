@@ -1,4 +1,3 @@
-
 # Franka FR3 固定空间轴旋转控制
 
 ## 1. 功能说明
@@ -45,6 +44,8 @@ axis_direction_link8:
 表示固定轴方向沿初始 `fr3_link8` 坐标系的正 Z 方向。
 
 节点启动时会自动归一化该向量。
+
+角速度正方向按照固定轴方向的右手定则定义。一般保持轴方向不变，通过键盘 `R` 切换旋转方向。
 
 ### 2.2 轴上一点
 
@@ -104,29 +105,35 @@ fixed_axis_rotation_interfaces
 
 ```text
 franka_ros2_ws/src/
-├── fixed_axis_rotation/
-│   ├── config/
-│   │   └── fixed_axis_rotation.yaml
-│   ├── fixed_axis_rotation/
-│   │   ├── __init__.py
-│   │   ├── fixed_axis_keyboard_node.py
-│   │   ├── fixed_axis_rotation_node.py
-│   │   ├── robot_kinematics.py
-│   │   ├── safety.py
-│   │   └── velocity_mapper.py
-│   ├── launch/
-│   │   └── fixed_axis_rotation.launch.py
-│   ├── resource/
-│   │   └── fixed_axis_rotation
-│   ├── package.xml
-│   ├── readme.md
-│   └── setup.py
-│
-└── fixed_axis_rotation_interfaces/
-    ├── msg/
-    │   └── FixedAxisCommand.msg
-    ├── CMakeLists.txt
-    └── package.xml
+└── fixed_axis_rotation_project/
+    ├── fixed_axis_rotation/
+    │   ├── config/
+    │   │   ├── fixed_axis_rotation.yaml
+    │   │   └── urdf/
+    │   │       └── fr3.urdf
+    │   ├── fixed_axis_rotation/
+    │   │   ├── __init__.py
+    │   │   ├── fixed_axis_keyboard_node.py
+    │   │   ├── fixed_axis_rotation_node.py
+    │   │   ├── robot_kinematics.py
+    │   │   ├── safety.py
+    │   │   └── velocity_mapper.py
+    │   ├── launch/
+    │   │   └── fixed_axis_rotation.launch.py
+    │   ├── resource/
+    │   │   └── fixed_axis_rotation
+    │   ├── package.xml
+    │   ├── setup.cfg
+    │   └── setup.py
+    │
+    ├── fixed_axis_rotation_interfaces/
+    │   ├── msg/
+    │   │   └── FixedAxisCommand.msg
+    │   ├── CMakeLists.txt
+    │   └── package.xml
+    │
+    ├── README.md
+    └── .gitignore
 ```
 
 ---
@@ -227,22 +234,25 @@ ros2 interface show \
 
 ## 7. URDF 检查
 
-参数文件默认使用：
+当前参数文件使用：
 
 ```yaml
-urdf_path: "/tmp/fr3.urdf"
+urdf_path: "/home/harry/franka_ros2_ws/src/fixed_axis_rotation_project/fixed_axis_rotation/config/urdf/fr3.urdf"
 ```
 
 启动节点前检查文件是否存在：
 
 ```bash
-ls -l /tmp/fr3.urdf
+ls -l \
+  /home/harry/franka_ros2_ws/src/fixed_axis_rotation_project/fixed_axis_rotation/config/urdf/fr3.urdf
 ```
 
 也可以执行：
 
 ```bash
-test -f /tmp/fr3.urdf && echo "URDF OK" || echo "URDF missing"
+test -f /home/harry/franka_ros2_ws/src/fixed_axis_rotation_project/fixed_axis_rotation/config/urdf/fr3.urdf \
+  && echo "URDF OK" \
+  || echo "URDF missing"
 ```
 
 URDF 中必须包含：
@@ -258,10 +268,10 @@ fr3_joint7
 fr3_link8
 ```
 
-如果 URDF 路径不同，需要修改：
+如果项目所在路径发生变化，需要修改：
 
 ```text
-config/fixed_axis_rotation.yaml
+fixed_axis_rotation/config/fixed_axis_rotation.yaml
 ```
 
 中的：
@@ -342,7 +352,7 @@ ros2 run fixed_axis_rotation \
   fixed_axis_keyboard_node \
   --ros-args \
   --params-file \
-  ~/franka_ros2_ws/src/fixed_axis_rotation/config/fixed_axis_rotation.yaml
+  ~/franka_ros2_ws/src/fixed_axis_rotation_project/fixed_axis_rotation/config/fixed_axis_rotation.yaml
 ```
 
 ### 启动指令详解
@@ -354,7 +364,7 @@ ros2 run fixed_axis_rotation \
 ```bash
 ros2 launch fixed_axis_rotation \
   fixed_axis_rotation.launch.py \
-  params_file:=~/franka_ros2_ws/src/fixed_axis_rotation/config/fixed_axis_rotation.yaml \
+  params_file:=~/franka_ros2_ws/src/fixed_axis_rotation_project/fixed_axis_rotation/config/fixed_axis_rotation.yaml \
   dry_run:=true
 ```
 
@@ -366,7 +376,7 @@ ros2 launch fixed_axis_rotation \
 固定轴控制参数文件路径。
 ```
 
-参数文件中包含 URDF 路径、固定轴定义、Topic、速度限制和安全参数。建议使用绝对路径。
+参数文件中包含 URDF 路径、固定轴定义、Topic、速度限制和安全参数。
 
 `dry_run`
 
@@ -395,8 +405,6 @@ ros2 launch fixed_axis_rotation \
   --show-args
 ```
 
----
-
 #### 键盘控制节点启动
 
 全部可传入参数：
@@ -406,7 +414,7 @@ ros2 run fixed_axis_rotation \
   fixed_axis_keyboard_node \
   --ros-args \
   --params-file \
-  ~/franka_ros2_ws/src/fixed_axis_rotation/config/fixed_axis_rotation.yaml \
+  ~/franka_ros2_ws/src/fixed_axis_rotation_project/fixed_axis_rotation/config/fixed_axis_rotation.yaml \
   -p command_topic:=/fixed_axis_rotation/command \
   -p publish_rate_hz:=20.0 \
   -p default_angular_speed:=0.02 \
@@ -426,63 +434,35 @@ ros2 run fixed_axis_rotation \
 
 ```text
 键盘控制命令的发布 Topic。
-```
-
-默认值：
-
-```text
-/fixed_axis_rotation/command
+默认值：/fixed_axis_rotation/command
 ```
 
 `publish_rate_hz`
 
 ```text
 控制命令心跳发布频率，单位 Hz。
-```
-
-默认值：
-
-```text
-20.0
+默认值：20.0
 ```
 
 `default_angular_speed`
 
 ```text
-按下 W 且当前速度为零时使用的初始角速度。
-单位：rad/s。
-```
-
-默认值：
-
-```text
-0.02
+按下 W 且当前速度为零时使用的初始角速度，单位 rad/s。
+默认值：0.02
 ```
 
 `angular_speed_step`
 
 ```text
-每次按下 D、A、+ 或 - 时的角速度变化量。
-单位：rad/s。
-```
-
-默认值：
-
-```text
-0.005
+每次按下 D、A、+ 或 - 时的角速度变化量，单位 rad/s。
+默认值：0.005
 ```
 
 `max_angular_speed`
 
 ```text
-键盘能够设置的最大角速度绝对值。
-单位：rad/s。
-```
-
-默认值：
-
-```text
-0.05
+键盘能够设置的最大角速度绝对值，单位 rad/s。
+默认值：0.05
 ```
 
 命令行中的 `-p` 参数会覆盖 YAML 文件中的同名参数。
@@ -494,10 +474,8 @@ ros2 run fixed_axis_rotation \
   fixed_axis_keyboard_node \
   --ros-args \
   --params-file \
-  ~/franka_ros2_ws/src/fixed_axis_rotation/config/fixed_axis_rotation.yaml
+  ~/franka_ros2_ws/src/fixed_axis_rotation_project/fixed_axis_rotation/config/fixed_axis_rotation.yaml
 ```
-
-
 
 ---
 
@@ -659,7 +637,9 @@ omega
 必须确认以下项目：
 
 ```text
-[ ] /tmp/fr3.urdf 存在
+[ ] config/urdf/fr3.urdf 存在
+
+[ ] YAML 中的 urdf_path 与本机实际路径一致
 
 [ ] URDF 中存在 fr3_link8
 
@@ -673,7 +653,7 @@ omega
 
 [ ] 固定轴旋转半径正确
 
-[ ] dry_run 中关节速度方向正确
+[ ] dry-run 中关节速度方向正确
 
 [ ] W、Space、E、C 和 Q 按键正常
 
@@ -770,3 +750,12 @@ dry_run: true
 
 表示仅计算，不发布真实关节速度。
 
+### 15.6 提示参数文件无法打开
+
+检查启动命令是否仍在使用移动前的旧路径。
+
+当前参数文件路径为：
+
+```text
+~/franka_ros2_ws/src/fixed_axis_rotation_project/fixed_axis_rotation/config/fixed_axis_rotation.yaml
+```

@@ -16,10 +16,10 @@
 #     axis_point_link8 和 axis_direction_link8
 #     均在初始 fr3_link8 坐标系中定义。
 #
-# 重点修改
-# axis_point_link8:
-# axis_direction_link8:
-# urdf_path:
+# 重点修改：
+#     axis_point_link8
+#     axis_direction_link8
+#     urdf_path
 
 
 fixed_axis_rotation_node:
@@ -31,7 +31,7 @@ fixed_axis_rotation_node:
 
     # 必须是已经展开完成的 URDF 文件，
     # 不能直接填写 xacro 文件。
-    urdf_path: /home/harry/franka_ros2_ws/src/fixed_axis_rotation_project/fixed_axis_rotation/config/urdf/fr3.urdf
+    urdf_path: "/home/harry/franka_ros2_ws/src/fixed_axis_rotation_project/fixed_axis_rotation/config/urdf/fr3.urdf"
 
     # 固定轴旋转所控制的末端坐标系。
     end_effector_frame: "fr3_link8"
@@ -59,7 +59,6 @@ fixed_axis_rotation_node:
     #     m
     #
     # 当前默认值表示固定轴经过 link8 原点。
-    # 后续需要根据实际安装结构修改。
     axis_point_link8:
       - 0.0
       - 0.0
@@ -69,11 +68,11 @@ fixed_axis_rotation_node:
     #
     # 节点启动时会自动归一化。
     #
-    # 当前默认值表示沿 link8 的正 Z 方向。
+    # 当前值表示沿 link8 的负 Z 方向。
     axis_direction_link8:
       - 0.0
       - 0.0
-      - 1.0
+      - -1.0
 
     # 第一次收到有效关节状态时，
     # 自动记录固定轴和初始末端位姿。
@@ -89,7 +88,7 @@ fixed_axis_rotation_node:
     # 阻尼最小二乘伪逆阻尼因子。
     damping: 0.01
 
-    # 角速度最大变化率。
+    # 固定轴目标角速度最大变化率。
     # 单位：rad/s^2
     max_angular_acceleration: 0.05
 
@@ -105,13 +104,18 @@ fixed_axis_rotation_node:
     duration_sec: 0.0
 
     # ========================================================
-    # 速度限制
+    # 速度和加速度限制
     # ========================================================
 
     # 单个关节最大速度绝对值。
-    # 初次真机测试使用较小值。
     # 单位：rad/s
     max_joint_velocity: 0.05
+
+    # 单个关节最大角加速度绝对值。
+    # 单位：rad/s^2
+    #
+    # 该值用于限制相邻控制周期 q_dot 的变化。
+    max_joint_acceleration: 0.10
 
     # 末端最大线速度模长。
     # 单位：m/s

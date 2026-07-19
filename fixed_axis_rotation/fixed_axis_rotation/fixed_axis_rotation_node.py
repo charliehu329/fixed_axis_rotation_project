@@ -146,6 +146,7 @@ from fixed_axis_rotation.safety import (
     check_joint_position_limits,
     limit_angular_acceleration,
     limit_cartesian_velocity,
+    limit_joint_acceleration,
     limit_joint_velocity,
 )
 from fixed_axis_rotation.velocity_mapper import (
@@ -247,6 +248,12 @@ class FixedAxisRotationNode(Node):
         # 速度限制
         self.declare_parameter(
             "max_joint_velocity",
+            Parameter.Type.DOUBLE
+        )
+
+        # 加速度限制
+        self.declare_parameter(
+            "max_joint_acceleration",
             Parameter.Type.DOUBLE
         )
 
@@ -408,6 +415,12 @@ class FixedAxisRotationNode(Node):
             )
         )
 
+        self.max_joint_acceleration = float(
+            self.get_required_parameter(
+                "max_joint_acceleration"
+            )
+        )
+
         self.max_linear_velocity = float(
             self.get_required_parameter(
                 "max_linear_velocity"
@@ -511,6 +524,13 @@ class FixedAxisRotationNode(Node):
         # =====================================================
 
         self.current_q = None
+
+        # 上一个控制周期实际输出的关节速度。
+        # 用于进行关节加速度限制。
+        self.previous_q_dot = np.zeros(
+            7,
+            dtype=float
+        )
 
         self.last_joint_state_time = None
 
@@ -766,6 +786,9 @@ class FixedAxisRotationNode(Node):
 
             "max_joint_velocity":
                 self.max_joint_velocity,
+
+            "max_joint_acceleration":
+                self.max_joint_acceleration,
 
             "max_linear_velocity":
                 self.max_linear_velocity,
@@ -1404,16 +1427,8 @@ class FixedAxisRotationNode(Node):
                 )
             )
 
-            q_dot = check_finite_vector(
-                q_dot,
-                "q_dot"
-            ).reshape(7)
-
-            q_dot = limit_joint_velocity(
-                q_dot,
-                max_abs=(
-                    self.max_joint_velocity
-                )
+            q_dot = self.apply_joint_velocity_limits(
+                q_dot
             )
 
         except Exception as error:
@@ -1846,11 +1861,8 @@ class FixedAxisRotationNode(Node):
                 )
             )
 
-            q_dot = limit_joint_velocity(
-                q_dot,
-                max_abs=(
-                    self.max_joint_velocity
-                )
+            q_dot = self.apply_joint_velocity_limits(
+                q_dot
             )
 
         except Exception as error:
@@ -1935,6 +1947,11 @@ class FixedAxisRotationNode(Node):
 
         self.target_angular_speed = 0.0
 
+        self.previous_q_dot = np.zeros(
+            7,
+            dtype=float
+        )
+
         if (
             self.current_command
             != FixedAxisCommand.COMMAND_EMERGENCY_STOP
@@ -1951,6 +1968,55 @@ class FixedAxisRotationNode(Node):
             self.safe_stop_reason = reason
 
         self.publish_zero_velocity()
+
+    def apply_joint_velocity_limits(
+        self,
+        q_dot
+    ):
+        """
+        对关节速度执行速度和加速度限制。
+
+        处理顺序：
+            1. 检查七维关节速度。
+            2. 限制关节速度绝对值。
+            3. 限制相邻周期的关节速度变化量。
+            4. 保存本周期实际输出速度。
+        """
+
+        q_dot = check_finite_vector(
+            q_dot,
+            "q_dot"
+        ).reshape(7)
+
+        q_dot = limit_joint_velocity(
+            q_dot,
+            max_abs=(
+                self.max_joint_velocity
+            )
+        )
+
+        q_dot = limit_joint_acceleration(
+            previous_q_dot=(
+                self.previous_q_dot
+            ),
+            target_q_dot=q_dot,
+            max_abs=(
+                self.max_joint_acceleration
+            ),
+            dt=self.control_period_sec
+        )
+
+        q_dot = check_finite_vector(
+            q_dot,
+            "q_dot_safe"
+        ).reshape(7)
+
+        self.previous_q_dot = (
+            q_dot.copy()
+        )
+
+        return q_dot
+
 
     def publish_joint_velocity(
         self,
