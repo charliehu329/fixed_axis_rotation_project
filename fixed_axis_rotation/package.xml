@@ -1,0 +1,100 @@
+<?xml version="1.0"?>
+<?xml-model
+  href="http://download.ros.org/schema/package_format3.xsd"
+  schematypens="http://www.w3.org/2001/XMLSchema"?>
+
+<package format="3">
+
+  <name>fixed_axis_rotation</name>
+
+  <version>0.0.1</version>
+
+  <description>
+    Fixed-axis Cartesian rotation controller
+    and keyboard command node for Franka FR3.
+  </description>
+
+  <maintainer email="harry@example.com">
+    harry
+  </maintainer>
+
+  <license>Apache-2.0</license>
+
+  <!-- ===================================================== -->
+  <!-- 构建工具 -->
+  <!-- ===================================================== -->
+
+  <buildtool_depend>
+    ament_python
+  </buildtool_depend>
+
+  <!-- ===================================================== -->
+  <!-- ROS 2 运行依赖 -->
+  <!-- ===================================================== -->
+
+  <!-- Python ROS 2 节点 -->
+  <exec_depend>
+    rclpy
+  </exec_depend>
+
+  <!-- 接收 Franka 关节状态 -->
+  <exec_depend>
+    sensor_msgs
+  </exec_depend>
+
+  <!-- 发布七维关节速度 -->
+  <exec_depend>
+    std_msgs
+  </exec_depend>
+
+  <!-- 固定轴控制自定义消息 -->
+  <exec_depend>
+    fixed_axis_rotation_interfaces
+  </exec_depend>
+
+  <!-- 启动文件 -->
+  <exec_depend>
+    launch
+  </exec_depend>
+
+  <exec_depend>
+    launch_ros
+  </exec_depend>
+
+  <!-- ===================================================== -->
+  <!-- Python 计算依赖 -->
+  <!-- ===================================================== -->
+
+  <!-- 数值计算 -->
+  <exec_depend>
+    python3-numpy
+  </exec_depend>
+
+  <!-- Franka 正运动学和雅可比计算 -->
+  <exec_depend>
+    pinocchio
+  </exec_depend>
+
+  <!-- ===================================================== -->
+  <!-- 测试依赖 -->
+  <!-- ===================================================== -->
+
+  <test_depend>
+    ament_pytest
+  </test_depend>
+
+  <test_depend>
+    python3-pytest
+  </test_depend>
+
+  <!-- ===================================================== -->
+  <!-- 包类型 -->
+  <!-- ===================================================== -->
+
+  <export>
+    <build_type>
+      ament_python
+    </build_type>
+  </export>
+
+</package>
