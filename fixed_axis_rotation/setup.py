@@ -72,6 +72,16 @@ setup(
                 "config/*.yaml"
             )
         ),
+        (
+            os.path.join(
+                "share",
+                package_name,
+                "config"
+            ),
+            glob(
+                "config/*.yaml"
+            )
+        ),
     ],
 
     install_requires=[

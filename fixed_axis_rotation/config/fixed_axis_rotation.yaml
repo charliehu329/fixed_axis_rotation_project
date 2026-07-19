@@ -47,7 +47,7 @@ fixed_axis_rotation_node:
     command_topic: "/fixed_axis_rotation/command"
 
     # Franka 底层关节速度控制器指令。
-    joint_velocity_command_topic: "/joint_velocity_example_controller/commands"
+    joint_velocity_command_topic: "/velocity_command_node/target_velocities"
 
     # ========================================================
     # 固定轴定义
