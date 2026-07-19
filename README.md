@@ -290,6 +290,16 @@ urdf_path:
 dry_run: true
 ```
 
+底层控制测试
+
+```bash
+ros2 launch franka_velocity_ctrl \
+  fr3_velocity.launch.py \
+  robot_ip:=172.16.0.2 \
+  mode:=zero \
+  use_rviz:=false
+```
+
 也可以在启动命令中强制覆盖：
 
 ```bash
