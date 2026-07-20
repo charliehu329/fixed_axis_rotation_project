@@ -12,6 +12,7 @@ safety.py
     4. 检查当前关节位置是否接近关节限位。
     5. 检查雅可比矩阵是否接近奇异。
     6. 对目标角速度变化率进行限制。
+    7. 对七维关节速度变化率进行限制。
 
 接口：
     check_finite_vector(vector, name)
@@ -44,6 +45,13 @@ safety.py
         current_angular_speed,
         target_angular_speed,
         max_angular_acceleration,
+        dt
+    )
+
+    limit_joint_acceleration(
+        previous_q_dot,
+        target_q_dot,
+        max_abs,
         dt
     )
 
@@ -108,6 +116,17 @@ safety.py
     max_angular_acceleration:
         最大角加速度，单位为 rad/s^2。
 
+    previous_q_dot:
+        上一个控制周期实际输出的七维关节速度。
+
+    target_q_dot:
+        当前控制周期计算得到的七维目标关节速度。
+
+    max_abs:
+        用于关节速度限幅时，单位为 rad/s。
+
+        用于关节加速度限幅时，单位为 rad/s^2。
+
     dt:
         控制周期，单位为 s。
 
@@ -126,7 +145,7 @@ safety.py
     check_jacobian_condition:
         返回：
 
-        min_value:
+        minimum_value:
             雅可比矩阵最小奇异值。
 
         condition_number:
@@ -136,6 +155,9 @@ safety.py
 
     limit_angular_acceleration:
         返回经过角加速度限制后的下一周期角速度。
+
+    limit_joint_acceleration:
+        返回经过关节加速度限制后的七维关节速度。
 """
 
 import numpy as np
@@ -318,19 +340,6 @@ def check_joint_position_limits(
 
     当任意关节进入安全余量范围时，
     抛出 ValueError，由主控制节点进入安全停止。
-
-    输入：
-        q:
-            当前七维关节位置。
-
-        lower_limits:
-            七维关节位置下限。
-
-        upper_limits:
-            七维关节位置上限。
-
-        margin:
-            关节位置安全余量，单位为 rad。
     """
 
     q = np.asarray(
@@ -411,8 +420,7 @@ def check_joint_position_limits(
     )
 
     if np.any(
-        safe_lower_limits
-        >= safe_upper_limits
+        safe_lower_limits >= safe_upper_limits
     ):
         raise ValueError(
             "Joint position margin is too large."
@@ -674,3 +682,124 @@ def limit_angular_acceleration(
     return float(
         next_angular_speed
     )
+
+
+def limit_joint_acceleration(
+    previous_q_dot,
+    target_q_dot,
+    max_abs,
+    dt
+):
+    """
+    对七维关节速度的变化率进行限制。
+
+    输入：
+        previous_q_dot:
+            上一个控制周期实际输出的七维关节速度。
+            单位为 rad/s。
+
+        target_q_dot:
+            当前控制周期计算得到的七维目标关节速度。
+            单位为 rad/s。
+
+        max_abs:
+            单个关节允许的最大角加速度绝对值。
+            单位为 rad/s^2。
+
+        dt:
+            控制周期。
+            单位为 s。
+
+    输出：
+        q_dot_safe:
+            经过关节加速度限制后的七维关节速度。
+
+    方法：
+        单周期允许的最大速度变化量为：
+
+            maximum_change = max_abs * dt
+    """
+
+    previous_q_dot = np.asarray(
+        previous_q_dot,
+        dtype=float
+    ).reshape(-1)
+
+    target_q_dot = np.asarray(
+        target_q_dot,
+        dtype=float
+    ).reshape(-1)
+
+    if previous_q_dot.shape != (7,):
+        raise ValueError(
+            "previous_q_dot must contain "
+            "exactly 7 elements."
+        )
+
+    if target_q_dot.shape != (7,):
+        raise ValueError(
+            "target_q_dot must contain "
+            "exactly 7 elements."
+        )
+
+    check_finite_vector(
+        previous_q_dot,
+        "previous_q_dot"
+    )
+
+    check_finite_vector(
+        target_q_dot,
+        "target_q_dot"
+    )
+
+    max_abs = float(
+        max_abs
+    )
+
+    dt = float(
+        dt
+    )
+
+    if (
+        not np.isfinite(max_abs)
+        or max_abs <= 0.0
+    ):
+        raise ValueError(
+            "max_abs must be finite "
+            "and positive."
+        )
+
+    if (
+        not np.isfinite(dt)
+        or dt <= 0.0
+    ):
+        raise ValueError(
+            "dt must be finite "
+            "and positive."
+        )
+
+    maximum_change = (
+        max_abs
+        * dt
+    )
+
+    requested_change = (
+        target_q_dot
+        - previous_q_dot
+    )
+
+    limited_change = np.clip(
+        requested_change,
+        -maximum_change,
+        maximum_change
+    )
+
+    q_dot_safe = (
+        previous_q_dot
+        + limited_change
+    )
+
+    return check_finite_vector(
+        q_dot_safe,
+        "q_dot_safe"
+    ).reshape(7)
